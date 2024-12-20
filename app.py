@@ -9,8 +9,8 @@ api_key = os.getenv('ANTHROPIC_API_KEY')
 if not api_key:
     raise ValueError("No API key found. Make sure ANTHROPIC_API_KEY is set in your environment variables.")
 
-# Initialize Anthropic client - using older style initialization
-client = anthropic.Client(api_key=api_key)
+# Initialize Anthropic client with just the API key
+c = anthropic.Client(api_key)
 
 @app.route('/')
 def home():
@@ -25,15 +25,14 @@ def chat():
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
 
-        # Create completion using older API style
-        completion = client.completion(
-            prompt=f"\n\nHuman: {user_message}\n\nAssistant:",
+        # Create a completion with minimal parameters
+        response = c.completion(
+            prompt=f"{anthropic.HUMAN_PROMPT} {user_message}{anthropic.AI_PROMPT}",
             model="claude-3-opus-20240229",
-            max_tokens_to_sample=1024,
-            temperature=0.7,
+            max_tokens_to_sample=1000,
         )
 
-        return jsonify({'response': completion.completion})
+        return jsonify({'response': response.completion})
 
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
