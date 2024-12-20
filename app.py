@@ -19,18 +19,26 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
+        print("Received chat request")
         data = request.get_json()
+        print(f"Request data: {data}")
+        
         user_message = data.get('message', '')
+        print(f"User message: {user_message}")
         
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
 
+        print("Making request to Anthropic API...")
         # Create a completion with minimal parameters
         response = c.completion(
             prompt=f"{anthropic.HUMAN_PROMPT} {user_message}{anthropic.AI_PROMPT}",
-            model="claude-3-opus-20240229",
+            model="claude-2.1",  # Using older model version for compatibility
             max_tokens_to_sample=1000,
+            temperature=0.7,
+            stop_sequences=[anthropic.HUMAN_PROMPT]
         )
+        print(f"Received response from Anthropic API: {response}")
 
         return jsonify({'response': response.completion})
 
