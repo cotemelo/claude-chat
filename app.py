@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, jsonify
-from anthropic import Anthropic
+import anthropic
 
 app = Flask(__name__)
 
@@ -9,8 +9,8 @@ api_key = os.getenv('ANTHROPIC_API_KEY')
 if not api_key:
     raise ValueError("No API key found. Make sure ANTHROPIC_API_KEY is set in your environment variables.")
 
-# Initialize Anthropic client with minimal configuration
-anthropic = Anthropic(api_key=api_key)
+# Initialize Anthropic client - using older style initialization
+client = anthropic.Client(api_key=api_key)
 
 @app.route('/')
 def home():
@@ -25,19 +25,15 @@ def chat():
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
 
-        # Create a message using Claude with simplified parameters
-        message = anthropic.messages.create(
+        # Create completion using older API style
+        completion = client.completion(
+            prompt=f"\n\nHuman: {user_message}\n\nAssistant:",
             model="claude-3-opus-20240229",
-            messages=[{
-                "role": "user",
-                "content": user_message
-            }]
+            max_tokens_to_sample=1024,
+            temperature=0.7,
         )
 
-        # Extract the response content
-        response = message.content[0].text
-
-        return jsonify({'response': response})
+        return jsonify({'response': completion.completion})
 
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
