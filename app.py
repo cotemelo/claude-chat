@@ -11,14 +11,15 @@ api_key = os.getenv('ANTHROPIC_API_KEY')
 if not api_key:
     raise ValueError("No API key found. Make sure ANTHROPIC_API_KEY is set in your environment variables.")
 
-# Create custom httpx client with headers
+# Create custom httpx client with headers and increased timeout
 http_client = httpx.Client(
     base_url="https://api.anthropic.com",
     headers={
         "anthropic-version": "2023-06-01",
         "x-api-key": api_key,
         "content-type": "application/json"
-    }
+    },
+    timeout=60.0  # Increased timeout to 60 seconds
 )
 
 # Initialize Anthropic client
@@ -43,15 +44,22 @@ def chat():
 
         print("Making request to Anthropic API...")
         try:
-            # Direct API call using httpx
-            response = http_client.post(
-                "/v1/messages",
-                json={
-                    "model": "claude-2.1",
-                    "messages": [{"role": "user", "content": user_message}],
-                    "max_tokens": 1000
-                }
-            )
+            # Direct API call using httpx with retry logic
+            for attempt in range(2):  # Try twice
+                try:
+                    response = http_client.post(
+                        "/v1/messages",
+                        json={
+                            "model": "claude-2.1",
+                            "messages": [{"role": "user", "content": user_message}],
+                            "max_tokens": 4000  # Increased max tokens
+                        }
+                    )
+                    break  # If successful, break the loop
+                except httpx.TimeoutException:
+                    if attempt == 1:  # If this was our last attempt
+                        raise
+                    continue  # Otherwise, try again
             
             if response.status_code == 200:
                 result = response.json()
@@ -61,6 +69,10 @@ def chat():
                 print(f"API Error Status: {response.status_code}")
                 print(f"API Error Response: {response.text}")
                 return jsonify({'error': f'API Error: {response.text}'}), response.status_code
+            
+        except httpx.TimeoutException as timeout_error:
+            print(f"Timeout error: {str(timeout_error)}")
+            return jsonify({'error': 'The request took too long to complete. Please try a shorter message or try again.'}), 504
             
         except Exception as api_error:
             print(f"Anthropic API error: {str(api_error)}")
