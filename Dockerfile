@@ -7,7 +7,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-ENV PORT=8000
-EXPOSE 8000
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
+CMD ["python", "app.py"]
