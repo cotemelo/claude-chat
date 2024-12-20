@@ -1,13 +1,16 @@
+import os
 from flask import Flask, render_template, request, jsonify
 from anthropic import Anthropic
-from dotenv import load_dotenv
-import os
-
-# Load environment variables
-load_dotenv()
 
 app = Flask(__name__)
-anthropic = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+
+# Get the API key from environment variables
+api_key = os.getenv('ANTHROPIC_API_KEY')
+if not api_key:
+    raise ValueError("No API key found. Make sure ANTHROPIC_API_KEY is set in your environment variables.")
+
+# Initialize Anthropic client with minimal configuration
+anthropic = Anthropic(api_key=api_key)
 
 @app.route('/')
 def home():
@@ -16,17 +19,43 @@ def home():
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        user_message = request.json['message']
+        data = request.get_json()
+        user_message = data.get('message', '')
+        
+        if not user_message:
+            return jsonify({'error': 'No message provided'}), 400
+
+        # Create a message using Claude with simplified parameters
         message = anthropic.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=1024,
-            messages=[
-                {"role": "user", "content": user_message}
-            ]
+            model="claude-3-opus-20240229",
+            messages=[{
+                "role": "user",
+                "content": user_message
+            }]
         )
-        return jsonify({"response": message.content[0].text})
+
+        # Extract the response content
+        response = message.content[0].text
+
+        return jsonify({'response': response})
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error in chat endpoint: {str(e)}")
+        return jsonify({'error': 'An error occurred processing your request'}), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Not Found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal Server Error'}), 500
+
+# Create the WSGI application object
+application = app
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.getenv('PORT', 5000))
+    host = os.getenv('HOST', '0.0.0.0')
+    debug = os.getenv('FLASK_ENV') == 'development'
+    app.run(host=host, port=port, debug=debug)
