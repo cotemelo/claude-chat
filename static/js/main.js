@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
         messageDiv.classList.add(isUser ? 'user-message' : 'claude-message');
         
         const sender = document.createElement('strong');
-        sender.textContent = isUser ? 'You: ' : 'Claude: ';
+        sender.textContent = isUser ? 'You: ' : 'MeloGPT: ';
         
         const text = document.createElement('span');
         text.textContent = content;
