@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MELO CHAT INTERFACE</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Claude Chat Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>MELO CHAT INTERFACE</h1>
-        <div id="chatMessages" class="chat-container"></div>
-        <div class="input-container">
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Claude Chat Interface</h1>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be added here dynamically -->
+        </div>
+        <div class="chat-input">
             <input type="text" id="userInput" placeholder="Type your message...">
             <button id="sendButton">Send</button>
         </div>
     </div>
-    <script src="/static/js/main.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
-</html>
+</html>a
