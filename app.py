@@ -2,6 +2,7 @@ import os
 import traceback
 from flask import Flask, render_template, request, jsonify
 import anthropic
+from anthropic.api import API_VERSION
 
 app = Flask(__name__)
 
@@ -10,8 +11,11 @@ api_key = os.getenv('ANTHROPIC_API_KEY')
 if not api_key:
     raise ValueError("No API key found. Make sure ANTHROPIC_API_KEY is set in your environment variables.")
 
-# Initialize Anthropic client with just the API key
-c = anthropic.Client(api_key)
+# Initialize Anthropic client with version header
+c = anthropic.Client(
+    api_key,
+    default_headers={"anthropic-version": "2023-06-01"}  # Adding required version header
+)
 
 @app.route('/')
 def home():
