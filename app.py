@@ -1,8 +1,7 @@
 import os
 import traceback
 from flask import Flask, render_template, request, jsonify
-import anthropic
-from anthropic.api import API_VERSION
+from anthropic import Anthropic
 
 app = Flask(__name__)
 
@@ -11,10 +10,14 @@ api_key = os.getenv('ANTHROPIC_API_KEY')
 if not api_key:
     raise ValueError("No API key found. Make sure ANTHROPIC_API_KEY is set in your environment variables.")
 
-# Initialize Anthropic client with version header
-c = anthropic.Client(
-    api_key,
-    default_headers={"anthropic-version": "2023-06-01"}  # Adding required version header
+# Initialize Anthropic client
+anthropic_client = Anthropic(
+    api_key=api_key,
+    base_url="https://api.anthropic.com",
+    default_headers={
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+    }
 )
 
 @app.route('/')
@@ -36,17 +39,20 @@ def chat():
 
         print("Making request to Anthropic API...")
         try:
-            # Create a completion with minimal parameters
-            response = c.completion(
-                prompt=f"{anthropic.HUMAN_PROMPT} {user_message}{anthropic.AI_PROMPT}",
+            # Using the messages API instead of completions
+            message = anthropic_client.messages.create(
                 model="claude-2.1",
-                max_tokens_to_sample=1000,
-                temperature=0.7,
-                stop_sequences=[anthropic.HUMAN_PROMPT]
+                messages=[{
+                    "role": "user",
+                    "content": user_message
+                }],
+                max_tokens=1000
             )
-            print(f"Received response: {response}")
+            print(f"Received response: {message}")
             
-            return jsonify({'response': response.completion})
+            # Extract the response text
+            response_text = message.content[0].text
+            return jsonify({'response': response_text})
             
         except Exception as api_error:
             print(f"Anthropic API error: {str(api_error)}")
