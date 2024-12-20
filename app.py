@@ -1,4 +1,5 @@
 import os
+import traceback
 from flask import Flask, render_template, request, jsonify
 import anthropic
 
@@ -30,21 +31,28 @@ def chat():
             return jsonify({'error': 'No message provided'}), 400
 
         print("Making request to Anthropic API...")
-        # Create a completion with minimal parameters
-        response = c.completion(
-            prompt=f"{anthropic.HUMAN_PROMPT} {user_message}{anthropic.AI_PROMPT}",
-            model="claude-2.1",  # Using older model version for compatibility
-            max_tokens_to_sample=1000,
-            temperature=0.7,
-            stop_sequences=[anthropic.HUMAN_PROMPT]
-        )
-        print(f"Received response from Anthropic API: {response}")
-
-        return jsonify({'response': response.completion})
+        try:
+            # Create a completion with minimal parameters
+            response = c.completion(
+                prompt=f"{anthropic.HUMAN_PROMPT} {user_message}{anthropic.AI_PROMPT}",
+                model="claude-2.1",
+                max_tokens_to_sample=1000,
+                temperature=0.7,
+                stop_sequences=[anthropic.HUMAN_PROMPT]
+            )
+            print(f"Received response: {response}")
+            
+            return jsonify({'response': response.completion})
+            
+        except Exception as api_error:
+            print(f"Anthropic API error: {str(api_error)}")
+            print(f"Traceback: {traceback.format_exc()}")
+            return jsonify({'error': f'API Error: {str(api_error)}'}), 500
 
     except Exception as e:
-        print(f"Error in chat endpoint: {str(e)}")
-        return jsonify({'error': 'An error occurred processing your request'}), 500
+        print(f"Server error: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Server Error: {str(e)}'}), 500
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -52,7 +60,7 @@ def not_found_error(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({'error': 'Internal Server Error'}), 500
+    return jsonify({'error': str(error)}), 500
 
 # Create the WSGI application object
 application = app
